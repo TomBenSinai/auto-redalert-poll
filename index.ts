@@ -234,7 +234,7 @@ async function sendPoll(chatId: string, areas: string[] = []) {
     console.log(`Sending poll to ${chatId}...`);
     try {
         const areaString = areas.length > 0 ? ` (${areas.join(', ')})` : '';
-        const pollTitle = `🚨 אזעקת צבע אדום${areaString} 🚨\nהאם כולם במרחב המוגן?`;
+        const pollTitle = `🚨 אזעקת צבע אדום${areaString}\nהאם כולם במרחב המוגן?`;
 
         // @ts-ignore - whatsapp-web.js types incorrectly mark messageSecret as required
         const poll = new Poll(pollTitle, ['בממ״ד 🛡️', 'אין פה אזעקה 🤫'], { allowMultipleAnswers: false });
