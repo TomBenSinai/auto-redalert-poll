@@ -51,3 +51,11 @@ A Node.js tool using TypeScript that automatically monitors the Pikud Haoref API
 - **Bot isn't sending messages but connects successfully:** Double-check your `TARGET_CHAT_ID` in the `.env` file. Group IDs must end in `@g.us` and individual direct chats must end in `@c.us`.
 - **Alerts aren't being detected:** Make sure you've spelled the areas correctly in `AREAS_TO_MONITOR`, matching the exact official Pikud Haoref area names in Hebrew.
 - **API Connection Errors:** The Pikud Haoref API is generally only accessible from Israeli IP addresses. If you are hosting this on a cloud provider outside of Israel, it may be blocked.
+
+## Disclaimer
+
+This project relies on `whatsapp-web.js`, which uses an **unofficial** connection to the WhatsApp Web API. 
+
+While this specific use-case is generally safe because it sends very few messages (only when there is an actual alert) and strictly interacts with your own pre-defined group or chat, it is still technically against WhatsApp's Terms of Service to use unofficial automated clients. 
+
+Use this at your own risk. It is highly recommended to use a secondary WhatsApp number for the bot rather than your primary personal account, just to be safe.

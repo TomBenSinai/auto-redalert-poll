@@ -4,8 +4,20 @@ import * as qrcode from 'qrcode-terminal';
 import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
+import pino from 'pino';
 
 dotenv.config();
+
+
+const logger = pino({
+    transport: {
+        target: 'pino-pretty',
+        options: {
+            translateTime: 'SYS:standard',
+            ignore: 'pid,hostname'
+        }
+    }
+});
 
 let TARGET_CHAT_ID: string | undefined = process.env.TARGET_CHAT_ID;
 const AREAS_TO_MONITOR: string[] = process.env.AREAS_TO_MONITOR
@@ -15,11 +27,11 @@ const POLL_INTERVAL: number = parseInt(process.env.POLL_INTERVAL || '2000');
 const EVENT_SILENCE_MINUTES: number = parseInt(process.env.EVENT_SILENCE_MINUTES || '10', 10);
 
 if (!TARGET_CHAT_ID) {
-    console.warn("WARNING: TARGET_CHAT_ID is not set in .env.");
+    logger.warn("WARNING: TARGET_CHAT_ID is not set in .env.");
 }
 
 if (AREAS_TO_MONITOR.length === 0) {
-    console.warn("WARNING: AREAS_TO_MONITOR is not set in .env. Defaults to listening to all areas.");
+    logger.warn("WARNING: AREAS_TO_MONITOR is not set in .env. Defaults to listening to all areas.");
 }
 
 const client = new Client({
@@ -30,26 +42,26 @@ const client = new Client({
 });
 
 client.on('qr', (qr: string) => {
-    console.log('Please scan this QR code with your WhatsApp:');
+    logger.info('Please scan this QR code with your WhatsApp:');
     qrcode.generate(qr, { small: true });
 });
 
 client.on('ready', async () => {
-    console.log('WhatsApp client is ready!');
+    logger.info('WhatsApp client is ready!');
 
     const areasStr = AREAS_TO_MONITOR.length > 0
         ? '\n- ' + AREAS_TO_MONITOR.join('\n- ')
         : 'ALL';
 
     if (!TARGET_CHAT_ID) {
-        console.log('\n--- Helper: Quick Chat Setup ---');
-        console.log('TARGET_CHAT_ID is not set in your .env file.');
-        console.log('To set it up instantly, just send the message "!here"');
-        console.log('to this WhatsApp account from the chat or group you want to monitor.');
-        console.log('I will automatically capture the ID, save it, and start monitoring!');
-        console.log('--------------------------------\n');
+        logger.info('\n--- Helper: Quick Chat Setup ---');
+        logger.info('TARGET_CHAT_ID is not set in your .env file.');
+        logger.info('To set it up instantly, just send the message "!here"');
+        logger.info('to this WhatsApp account from the chat or group you want to monitor.');
+        logger.info('I will automatically capture the ID, save it, and start monitoring!');
+        logger.info('--------------------------------\n');
     } else {
-        console.log(`Monitoring areas: ${areasStr}`);
+        logger.info(`Monitoring areas: ${areasStr}`);
         startPikudHaorefPolling();
     }
 });
@@ -76,8 +88,8 @@ client.on('message', async (msg) => {
 
         fs.writeFileSync(envPath, envContent, 'utf8');
 
-        console.log(`✅ Chat ID successfully captured: ${TARGET_CHAT_ID}`);
-        console.log(`✅ Saved directly to .env file!\n`);
+        logger.info(`✅ Chat ID successfully captured: ${TARGET_CHAT_ID}`);
+        logger.info(`✅ Saved directly to .env file!\n`);
 
         const areasStr = AREAS_TO_MONITOR.length > 0
             ? '\n- ' + AREAS_TO_MONITOR.join('\n- ')
@@ -100,7 +112,7 @@ const EVENT_SILENCE_TIMEOUT_MS = EVENT_SILENCE_MINUTES * 60 * 1000;
 let processedAlertIds: string[] = [];
 
 function startPikudHaorefPolling() {
-    console.log('Starting polling for alerts...');
+    logger.info('Starting polling for alerts...');
 
     const url = 'https://www.oref.org.il/WarningMessages/alert/alerts.json';
     const headers = {
@@ -134,7 +146,7 @@ function startPikudHaorefPolling() {
                 try {
                     alert = JSON.parse(alert_data);
                 } catch (e) {
-                    console.log('⚠️  Warning: Received malformed JSON from API (Server under load). Re-polling...');
+                    logger.info('⚠️  Warning: Received malformed JSON from API (Server under load). Re-polling...');
                     return;
                 }
 
@@ -166,7 +178,7 @@ function startPikudHaorefPolling() {
                         triggeredAreas.forEach(area => currentEventAreas.add(area));
 
                         if (!isEventActive) {
-                            console.log(`🚨 NEW EVENT DETECTED in monitored area! Cities: ${triggeredAreas.join(', ')} 🚨`);
+                            logger.info(`🚨 NEW EVENT DETECTED in monitored area! Cities: ${triggeredAreas.join(', ')} 🚨`);
                             isEventActive = true;
 
                             if (TARGET_CHAT_ID) {
@@ -176,23 +188,23 @@ function startPikudHaorefPolling() {
                                     }
                                 });
                             } else {
-                                console.log("Cannot send poll, target chat ID is not configured.");
+                                logger.info("Cannot send poll, target chat ID is not configured.");
                             }
 
                         } else if (newlyTriggeredAreas.length > 0) {
-                            console.log(`📡 Continuing event, new areas hit: ${newlyTriggeredAreas.join(', ')} 📡`);
+                            logger.info(`📡 Continuing event, new areas hit: ${newlyTriggeredAreas.join(', ')} 📡`);
                             sendNewAreaMessage(newlyTriggeredAreas, currentEventOriginalPoll);
                         } else {
-                            console.log(`📡 Continuing event in monitored area (no new areas). Cities: ${triggeredAreas.join(', ')} 📡`);
+                            logger.info(`📡 Continuing event in monitored area (no new areas). Cities: ${triggeredAreas.join(', ')} 📡`);
                         }
                     }
                 }
             } else {
                 if (isEventActive && !eventResetTimeout) {
-                    console.log(`⏳ Area went quiet. Starting ${EVENT_SILENCE_TIMEOUT_MS / 60000} minute countdown to reset event...`);
+                    logger.info(`⏳ Area went quiet. Starting ${EVENT_SILENCE_TIMEOUT_MS / 60000} minute countdown to reset event...`);
 
                     eventResetTimeout = setTimeout(() => {
-                        console.log(`✅ ${EVENT_SILENCE_MINUTES} minutes of silence passed. Event officially ended.`);
+                        logger.info(`✅ ${EVENT_SILENCE_MINUTES} minutes of silence passed. Event officially ended.`);
                         isEventActive = false;
                         currentEventAreas.clear();
                         currentEventOriginalPoll = null;
@@ -224,14 +236,14 @@ async function sendNewAreaMessage(areas: string[], originalPollMsg?: any) {
         } else {
             await client.sendMessage(targetId, message);
         }
-        console.log(`Sent message for new areas: ${areaString}`);
+        logger.info(`Sent message for new areas: ${areaString}`);
     } catch (error) {
-        console.error('Failed to send new area message:', error);
+        logger.error({ err: error }, 'Failed to send new area message: ' + error);
     }
 }
 
 async function sendPoll(chatId: string, areas: string[] = []) {
-    console.log(`Sending poll to ${chatId}...`);
+    logger.info(`Sending poll to ${chatId}...`);
     try {
         const areaString = areas.length > 0 ? ` (${areas.join(', ')})` : '';
         const pollTitle = `🚨 אזעקת צבע אדום${areaString}\nהאם כולם במרחב המוגן?`;
@@ -239,16 +251,16 @@ async function sendPoll(chatId: string, areas: string[] = []) {
         // @ts-ignore - whatsapp-web.js types incorrectly mark messageSecret as required
         const poll = new Poll(pollTitle, ['בממ״ד 🛡️', 'אין פה אזעקה 🤫'], { allowMultipleAnswers: false });
         const msg = await client.sendMessage(chatId, poll);
-        console.log('Poll sent successfully!');
+        logger.info('Poll sent successfully!');
         return msg;
     } catch (error) {
-        console.error('Failed to send poll:', error);
+        logger.error({ err: error }, 'Failed to send poll: ' + error);
         return null;
     }
 }
 
 process.on('SIGINT', async () => {
-    console.log('(SIGINT) Shutting down...');
+    logger.info('(SIGINT) Shutting down...');
     await client.destroy();
     process.exit(0);
 });
