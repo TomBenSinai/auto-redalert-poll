@@ -2,6 +2,7 @@
 
 A Node.js tool using TypeScript that automatically monitors the Pikud Haoref (Home Front Command) API for red alerts in specified areas, and instantly sends a WhatsApp poll to a target group or chat to check on everyone.
 
+![Red Alert Bot Demo](./redalert.jpeg)
 ## Features
 - Monitors specific areas for red alerts in real-time.
 - Automatically sends a WhatsApp poll to your designated group/chat when an alert occurs.
