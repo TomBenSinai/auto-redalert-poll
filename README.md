@@ -58,4 +58,4 @@ This project relies on `whatsapp-web.js`, which uses an **unofficial** connectio
 
 While this specific use-case is generally safe because it sends very few messages (only when there is an actual alert) and strictly interacts with your own pre-defined group or chat, it is still technically against WhatsApp's Terms of Service to use unofficial automated clients. 
 
-Use this at your own risk. It is highly recommended to use a secondary WhatsApp number for the bot rather than your primary personal account, just to be safe.
+If this concerns you, it is recommended to use a secondary WhatsApp number for the bot rather than your primary personal account, just to be safe.
